@@ -2,16 +2,16 @@ version: '3.8'
 
 services:
   web:
-    build: .  # Construir la imagen usando el Dockerfile en el directorio actual
+    build: .
     ports:
-      - "5000:5000"  # Mapear el puerto 5000 del contenedor al puerto 5000 del host
+      - "5000:5000"
     volumes:
-      - .:/app  # Montar el directorio actual en el contenedor para desarrollo (opcional)
+      - .:/app
     environment:
-      - FLASK_ENV=development  # Establecer el entorno de Flask como desarrollo
-    command: python app.py  # Comando para ejecutar la aplicación
+      - FLASK_ENV=development
+    command: python app.py
     networks:
-      - db_network  # Conectar el contenedor a la red externa llamada db_network
+      - db_network
 
 networks:
   db_network:

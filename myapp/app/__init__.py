@@ -7,7 +7,7 @@ def create_app():
 
     #App configuration
     app.config.update(
-        MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongos:27017"), # MongoDB conexion URI
+        MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongos:27017"), # MongoDB connection URI
         MONGO_DB = os.getenv("MONGO_DB", "my_database") #Database name
     )
 

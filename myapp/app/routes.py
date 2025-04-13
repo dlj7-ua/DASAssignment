@@ -26,6 +26,15 @@ def otra_pagina():
     return render_template('otra-pagina.html')
 
 #CRUDs
+# Helper function to serialize MongoDB documents
+def serialize_mongo_document(doc):
+    return {
+        k: str(v) if isinstance(v, ObjectId) else v
+        for k, v in doc.items()
+        if not isinstance(v, dict) and not isinstance(v, list)
+    }
+
+
 #Lines
 @main_routes.route('/lines', methods=['POST'])
 def create_line():
@@ -46,18 +55,23 @@ def create_line():
 
 @main_routes.route('/lines', methods=['GET'])
 def get_all_lines():
-    lines = get_crud().find_all_lines()
-    lines = [
-    {
-        **line,
-        '_id': str(line['_id']),
-        'lineId': str(line['lineId']),
-        'createdAt': line['createdAt'].isoformat(),
-        'updatedAt': line['updatedAt'].isoformat()
-    }
-    for line in lines
-]
-    return jsonify(lines), 200
+    try:
+        lines = get_crud().find_all_lines() 
+        formatted_lines = [
+            {
+                'lineId': str(line.get('lineId', '')),
+                'name': line.get('name', ''),
+                'mode': line.get('mode', ''),
+                'status': line.get('status', ''),
+                'disruptions': line.get('disruptions', []),
+                'createdAt': line.get('createdAt', '').isoformat() if line.get('createdAt') else None,
+                'updatedAt': line.get('updatedAt', '').isoformat() if line.get('updatedAt') else None
+            }
+            for line in lines
+        ]
+        return jsonify(formatted_lines), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @main_routes.route('/line/<line_id>', methods=['GET'])
 def get_line(line_id):
@@ -124,21 +138,25 @@ def create_arrival():
 
 @main_routes.route('/arrivals', methods=['GET'])
 def get_all_arrivals():
-    arrivals = get_crud().find_all_arrivals()
-    arrivals = [
-        {
-            **arrival,
-            '_id': str(arrival['_id']),
-            'vehicleId': str(arrival['vehicleId']),
-            'lineId': str(arrival['lineId']),
-            'stationId': str(arrival['stationId']),
-            'expectedArrival': arrival['expectedArrival'].isoformat(),
-            'createdAt': arrival['createdAt'].isoformat(),
-            'updatedAt': arrival['updatedAt'].isoformat()
-        }
-        for arrival in arrivals
-    ]
-    return jsonify(arrivals), 200
+    try:
+        arrivals = get_crud().find_all_arrivals()
+        formatted_arrivals = [
+            {
+                'vehicleId': str(arrival.get('vehicleId', '')),
+                'lineId': str(arrival.get('lineId', '')),
+                'stationId': str(arrival.get('stationId', '')),
+                'destination': arrival.get('destination', ''),
+                'expectedArrival': arrival.get('expectedArrival', '').isoformat() if arrival.get('expectedArrival') else None,
+                'timeToStation': arrival.get('timeToStation', 0),
+                'currentLocation': arrival.get('currentLocation', ''),
+                'direction': arrival.get('direction', ''),
+                'createdAt': arrival.get('createdAt', '').isoformat() if arrival.get('createdAt') else None
+            }
+            for arrival in arrivals
+        ]
+        return jsonify(formatted_arrivals), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @main_routes.route('/arrivals/<vehicle_id>', methods=['GET'])
 def get_arrival(vehicle_id):
@@ -191,33 +209,22 @@ def delete_arrival(vehicle_id):
 #Stations
 @main_routes.route('/stations', methods=['GET'])
 def get_all_stations():
-    stations = get_crud().find_all_stations()
-    stations = [
-        {
-            **station,
-            '_id': str(station['_id']),
-            'stationId': str(station['stationId']),
-            'createdAt': station['createdAt'].isoformat(),
-            'updatedAt': station['updatedAt'].isoformat()
-        }
-        for station in stations
-    ]
-    return jsonify(stations), 200
-
-@main_routes.route('/station/<station_id>', methods=['GET'])
-def get_station(station_id):
-    station = get_crud().find_station_by_id(station_id)
-    station = {
-        **station,
-        '_id': str(station['_id']),
-        'stationId': str(station['stationId']),
-        'createdAt': station['createdAt'].isoformat(),
-        'updatedAt': station['updatedAt'].isoformat()
-    }
-    if station:
-        return jsonify(station), 200
-    else:
-        return jsonify({'error': 'Station not found'}), 404
+    try:
+        stations = get_crud().find_all_stations()
+        formatted_stations = [
+            {
+                'naptanId': str(station.get('naptanId', '')),
+                'name': station.get('name', ''),
+                'mode': station.get('mode', ''),
+                'lines': [str(line) for line in station.get('lines', [])],
+                'createdAt': station.get('createdAt', '').isoformat() if station.get('createdAt') else None,
+                'updatedAt': station.get('updatedAt', '').isoformat() if station.get('updatedAt') else None
+            }
+            for station in stations
+        ]
+        return jsonify(formatted_stations), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @main_routes.route('/station/<station_id>', methods=['PUT'])
 def update_station(station_id):
@@ -265,18 +272,23 @@ def create_vehicle():
 
 @main_routes.route('/vehicles', methods=['GET'])
 def get_all_vehicles():
-    vehicles = get_crud().find_all_vehicles()
-    vehicles = [
-        {
-            **vehicle,
-            '_id': str(vehicle['_id']),
-            'vehicleId': str(vehicle['vehicleId']),
-            'createdAt': vehicle['createdAt'].isoformat(),
-            'updatedAt': vehicle['updatedAt'].isoformat()
-        }
-        for vehicle in vehicles
-    ]
-    return jsonify(vehicles), 200
+    try:
+        vehicles = get_crud().find_all_vehicles()
+        formatted_vehicles = [
+            {
+                '_id': str(vehicle.get('_id')),
+                'vehicleId': str(vehicle.get('vehicleId', '')),
+                'lineId': str(vehicle.get('lineId', '')),
+                'currentLocation': vehicle.get('currentLocation', ''),
+                'status': vehicle.get('status', ''),
+                'createdAt': vehicle.get('createdAt', '').isoformat() if vehicle.get('createdAt') else None,
+                'updatedAt': vehicle.get('updatedAt', '').isoformat() if vehicle.get('updatedAt') else None
+            }
+            for vehicle in vehicles
+        ]
+        return jsonify(formatted_vehicles), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @main_routes.route('/vehicle/<vehicle_id>', methods=['GET'])
 def get_vehicle(vehicle_id):
@@ -365,6 +377,7 @@ def get_lines_with_most_disruptions():
     return jsonify(lines), 200
 
 #Arrivals
+
 
 @main_routes.route('/arrivals/line/<line_id>', methods=['GET'])
 def get_arrivals_by_line(line_id):
@@ -529,3 +542,44 @@ def get_vehicles_by_location(location):
 def count_vehicles_by_line(line_id):
     count = get_queries().count_vehicles_by_line()
     return jsonify(count), 200
+
+
+@main_routes.route('/queries', methods=['GET', 'POST'])
+def execute_queries():
+    results = {}
+
+    if request.method == 'POST':
+        # Get the parameters from the form
+        mode = request.form.get('mode')
+        line_name = request.form.get('line_name')
+        station_id = request.form.get('station_id')
+        vehicle_id = request.form.get('vehicle_id')
+        location = request.form.get('location')
+        time = request.form.get('time', type=int)
+
+        # Execute the queries based on the parameters
+        if mode:
+            results['lines_by_mode'] = get_queries().find_lines_by_mode(mode)
+
+        if line_name:
+            results['line_by_name'] = get_queries().find_line_by_name(line_name)
+
+        if station_id:
+            results['arrivals_by_station'] = get_queries().find_arrivals_by_station(station_id)
+
+        if vehicle_id:
+            results['arrivals_by_vehicle'] = get_queries().find_arrivals_by_vehicle(vehicle_id)
+
+        if location:
+            results['vehicles_by_location'] = get_queries().find_vehicles_by_location(location)
+
+        if time:
+            results['arrivals_with_long_wait'] = get_queries().find_arrivals_with_long_wait(time)
+
+        results['count_arrivals_by_line'] = get_queries().count_arrivals_by_line()
+        results['count_arrivals_by_station'] = get_queries().count_arrivals_by_station()
+        results['stations_with_most_lines'] = get_queries().find_stations_with_most_lines()
+        results['count_vehicles_by_line'] = get_queries().count_vehicles_by_line()
+        results['lines_with_most_disruptions'] = get_queries().find_lines_with_most_disruptions()
+
+    return render_template('queries.html', results=results)

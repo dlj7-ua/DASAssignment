@@ -7,7 +7,7 @@ import logging
 from urllib.parse import quote_plus
 from bson import ObjectId
 
-# Configuración de logging
+# Logging set up
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -18,18 +18,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Constantes
+# Constants
 MODES = ["tube", "bus", "tram", "dlr", "overground", "river-bus"]
 TFL_API_URL = "https://api.tfl.gov.uk"
 DIRECTIONS = ["inbound", "outbound"]
 VEHICLE_STATUSES = ["In Service", "Out of Service", "Delayed"]
 
-# Configuración de MongoDB
+# MongoDB set up
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongos:27017")
 MONGO_DB = os.getenv("MONGO_DB", "my_database")
 
 def get_mongo_connection():
-    """Crea conexión validada a MongoDB"""
+    """Creates MongoDB connection"""
     try:
         client = MongoClient(
             MONGO_URI,
@@ -40,11 +40,11 @@ def get_mongo_connection():
         client.server_info()  # Valida la conexión
         return client[MONGO_DB]
     except Exception as e:
-        logger.critical(f"Error de conexión a MongoDB: {str(e)}")
+        logger.critical(f"Error when trying to connect to MongoDB database: {str(e)}")
         raise
 
 def fetch_tfl_data(endpoint):
-    """Obtiene datos de la API de TfL con manejo robusto de errores"""
+    """Fectches data from TFL API"""
     url = f"{TFL_API_URL}{endpoint}"
     try:
         response = requests.get(url, timeout=15)
@@ -55,25 +55,25 @@ def fetch_tfl_data(endpoint):
         return None
 
 def safe_object_id(id_str):
-    """Convierte string a ObjectId de forma segura"""
+    """Converts ObjectId to String safely"""
     try:
         return ObjectId(id_str) if id_str else None
     except:
         return None
 
 def populate_lines(db):
-    """Pobla la colección Lines cumpliendo el validador"""
-    logger.info("Poblando líneas de transporte...")
+    """Populates Lines with data from TFL API"""
+    logger.info("Populateing transport Lines...")
 
     for mode in MODES:
         data = fetch_tfl_data(f"/Line/Mode/{mode}")
         if not data:
-            logger.warning(f"No se obtuvieron datos para modo {mode}")
+            logger.warning(f"No data found for mode: {mode}")
             continue
 
         for line in data:
             try:
-                # Procesar status y disruptions
+                # Process line data and disruptions
                 statuses = line.get("lineStatuses", [])
                 status = "Unknown"
                 disruptions = []
@@ -83,7 +83,7 @@ def populate_lines(db):
                     disruptions = [s.get("reason") for s in statuses if s.get("reason")]
 
                 line_data = {
-                    "lineId": ObjectId(),  # Nuevo ObjectId para el validador
+                    "lineId": ObjectId(),
                     "name": line["name"],
                     "mode": mode,
                     "status": status,
@@ -92,7 +92,7 @@ def populate_lines(db):
                     "updatedAt": datetime.now()
                 }
 
-                # Insertar o actualizar
+                # Insert or update line in MongoDB
                 db.Lines.update_one(
                     {"name": line["name"], "mode": mode},
                     {"$set": line_data},
@@ -100,15 +100,15 @@ def populate_lines(db):
                 )
 
             except Exception as e:
-                logger.error(f"Error procesando línea {line.get('id')}: {str(e)}")
+                logger.error(f"Error processing line: {line.get('id')}: {str(e)}")
                 continue
 
-        logger.info(f"Procesadas {len(data)} líneas para modo {mode}")
+        logger.info(f"Processed {len(data)} lines for mode {mode}")
         time.sleep(1.5)
 
 def populate_stations(db):
-    """Pobla la colección Stations cumpliendo el validador"""
-    logger.info("Poblando estaciones...")
+    """Populates Stations with data from TFL API"""
+    logger.info("Populating Stations...")
 
     for line in db.Lines.find():
         try:
@@ -124,17 +124,17 @@ def populate_stations(db):
                     if not naptan_id:
                         continue
 
-                    # Primero verificar si la estación ya existe
+                    # First check if the station already exists
                     existing_station = db.Stations.find_one({"name": station.get("commonName", station.get("name", "Unknown"))})
                     
                     if existing_station:
-                        # Si existe, solo actualizamos las líneas
+                        # If it exists, we update the station with the new line
                         db.Stations.update_one(
                             {"_id": existing_station["_id"]},
                             {"$addToSet": {"lines": line_id}}
                         )
                     else:
-                        # Si no existe, creamos la estación completa
+                        # If it doesn't exist, we create a new station
                         station_data = {
                             "naptanId": ObjectId(),
                             "name": station.get("commonName", station.get("name", "Unknown")),
@@ -144,7 +144,7 @@ def populate_stations(db):
                             "updatedAt": datetime.now()
                         }
 
-                        # Añadir datos opcionales si existen
+                        # Add optional fields if they exist
                         if "zone" in station:
                             station_data["zone"] = station["zone"]
                         if "lat" in station and "lon" in station:
@@ -156,61 +156,69 @@ def populate_stations(db):
                         db.Stations.insert_one(station_data)
 
                 except Exception as e:
-                    logger.error(f"Error procesando estación: {str(e)}")
+                    logger.error(f"Error processing station: {str(e)}")
                     continue
 
-            logger.info(f"Procesadas estaciones para línea {line_name}")
+            logger.info(f"Processed Stations for line: {line_name}")
             time.sleep(0.7)
 
         except Exception as e:
-            logger.error(f"Error procesando línea {line_name}: {str(e)}")
+            logger.error(f"Error processing line: {line_name}: {str(e)}")
             continue
 
+def fetch_mode_arrivals(mode):
+    """Fetches arrivals for a specific mode of transport"""
+    try:
+        url = f"{TFL_API_URL}/Mode/{mode}/Arrivals"
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching arrivals for mode {mode}: {str(e)}")
+        return None
+
 def populate_arrivals_and_vehicles(db):
-    """Pobla Arrivals y Vehicles usando Naptan IDs"""
-    logger.info("Poblando llegadas y vehículos...")
-
-    for station in db.Stations.find().limit(30):  # Limitar para pruebas
+    """Populates Arrivals and Vehicles with data from TFL API"""
+    logger.info("Populating Vehicles and Arrivals for a given mode...")
+    
+    vehicles_cache = {}  # Cache para evitar duplicados de vehículos
+    
+    for mode in MODES:
         try:
-            naptan_id = station.get("naptanId")
-            if not naptan_id:
-                logger.warning(f"Estación {station.get('name')} no tiene Naptan ID")
+            arrivals_data = fetch_mode_arrivals(mode)
+            if not arrivals_data:
                 continue
 
-            # Usar el Naptan ID en lugar del nombre
-            arrivals_data = fetch_tfl_data(f"/StopPoint/{naptan_id}/Arrivals")
-            if not arrivals_data:
-                logger.info(f"No hay llegadas para estación {station.get('name')} (Naptan ID: {naptan_id})")
-                continue
+            arrivals_to_insert = []
+            vehicles_to_insert = []
 
             for arrival in arrivals_data:
                 try:
-                    # Procesar vehículo
+                    # Verify if the vehicle is already in the cache
                     vehicle_id = arrival.get("vehicleId")
-                    if vehicle_id:
+                    if vehicle_id and vehicle_id not in vehicles_cache:
                         vehicle_data = {
                             "vehicleId": ObjectId(),
-                            "lineId": safe_object_id(arrival.get("lineId")) or ObjectId(),
+                            "lineId": db.Lines.find_one({"name": arrival.get("lineName")}, {"_id": 1})["_id"],
                             "currentLocation": arrival.get("currentLocation", "Unknown"),
                             "status": "In Service",
                             "createdAt": datetime.now(),
                             "updatedAt": datetime.now()
                         }
+                        vehicles_to_insert.append(vehicle_data)
+                        vehicles_cache[vehicle_id] = vehicle_data["vehicleId"]
 
-                        db.Vehicles.update_one(
-                            {"currentLocation": vehicle_data["currentLocation"]},
-                            {"$set": vehicle_data},
-                            upsert=True
-                        )
-                        vehicle_id = vehicle_data["vehicleId"]
+                    #Processing arrival data
+                    station = db.Stations.find_one({"name": arrival.get("stationName")}, {"_id": 1})
+                    if not station:
+                        continue
 
-                    # Procesar llegada
                     direction = arrival.get("direction", "").lower()
                     direction = direction if direction in DIRECTIONS else "inbound"
 
                     arrival_data = {
-                        "vehicleId": vehicle_id,
-                        "lineId": safe_object_id(arrival.get("lineId")) or ObjectId(),
+                        "vehicleId": vehicles_cache.get(vehicle_id, ObjectId()),
+                        "lineId": db.Lines.find_one({"name": arrival.get("lineName")}, {"_id": 1})["_id"],
                         "stationId": station["_id"],
                         "destination": arrival.get("destinationName", "Unknown"),
                         "expectedArrival": datetime.strptime(
@@ -221,35 +229,44 @@ def populate_arrivals_and_vehicles(db):
                         "direction": direction,
                         "createdAt": datetime.now()
                     }
-
-                    db.Arrivals.insert_one(arrival_data)
+                    arrivals_to_insert.append(arrival_data)
 
                 except Exception as e:
-                    logger.error(f"Error procesando llegada: {str(e)}")
+                    logger.error(f"Error processing arrival: {str(e)}")
                     continue
 
-            logger.info(f"Procesadas {len(arrivals_data)} llegadas para {station['name']} (ID: {naptan_id})")
-            time.sleep(2)  # Pausa generosa para rate limiting
+            # Insert or update vehicles and arrivals in MongoDB
+            if vehicles_to_insert:
+                db.Vehicles.insert_many(vehicles_to_insert, ordered=False)
+            if arrivals_to_insert:
+                db.Arrivals.insert_many(arrivals_to_insert, ordered=False)
+
+            logger.info(f"Processed {len(arrivals_data)} Arrivals for mode {mode}")
+            time.sleep(1.5)
 
         except Exception as e:
-            logger.error(f"Error procesando estación {station.get('name')}: {str(e)}")
+            logger.error(f"Error processing mode {mode}: {str(e)}")
             continue
+
 def main():
-    """Función principal ejecutable desde CLI"""
+    """Main function to populate the database"""
     try:
-        logger.info("Conectando a MongoDB...")
+        logger.info("Connecting to MongoDB...")
         db = get_mongo_connection()
         
-        logger.info("Iniciando población de base de datos TfL...")
+        logger.info("Initiating database population...")
         
+        # Populate lines and stations first
         populate_lines(db)
         populate_stations(db)
+        
+        # Populate arrivals and vehicles
         populate_arrivals_and_vehicles(db)
         
-        logger.info("¡Base de datos poblada exitosamente!")
+        logger.info("Database Sucessfully populated!")
         return True
     except Exception as e:
-        logger.critical(f"Error durante la población: {str(e)}", exc_info=True)
+        logger.critical(f"Error during the population: {str(e)}", exc_info=True)
         return False
 
 if __name__ == "__main__":

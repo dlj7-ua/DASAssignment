@@ -3,7 +3,7 @@
 <head>
     <title>MongoDB Data Viewer</title>
     <script>
-        // Esquemas conocidos para cada colección (incluyendo todas las columnas posibles)
+        //Schemes for each collection
         const collectionSchemas = {
             'lines': ['_id', 'lineId', 'name', 'mode', 'status', 'disruptions', 'createdAt', 'updatedAt'],
             'arrivals': ['_id', 'vehicleId', 'lineId', 'stationId', 'destination', 'expectedArrival', 
@@ -34,11 +34,11 @@
             const table = document.getElementById('dataTable');
             table.innerHTML = '';
 
-            // Obtener las columnas del esquema conocido
+            // Obtain headers from collectionSchemas or use the first item keys
             const headers = collectionSchemas[collection] || 
                           (items.length > 0 ? Object.keys(items[0]) : []);
 
-            // Crear encabezados
+            // Create table header
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -51,7 +51,7 @@
             thead.appendChild(headerRow);
             table.appendChild(thead);
 
-            // Crear cuerpo de la tabla
+            // Create table body
             const tbody = document.createElement('tbody');
             
             if (items.length > 0) {
@@ -59,7 +59,7 @@
                     const row = document.createElement('tr');
                     headers.forEach(header => {
                         const td = document.createElement('td');
-                        // Manejar valores anidados o arrays
+                        // Handle different data types
                         const value = item[header];
                         if (Array.isArray(value)) {
                             td.textContent = value.join(', ');
@@ -88,7 +88,7 @@
 <body>
     <h1>Data display</h1>
     
-    <!-- Selector de colección -->
+    <!-- Colection list -->
     <select id="collectionSelect" onchange="loadCollection()">
         <option value="">Choose one collection</option>
         <option value="lines">Lines</option>
@@ -97,12 +97,12 @@
         <option value="vehicles">Vehicles</option>
     </select>
 
-    <!-- Tabla de datos -->
+    <!-- Data table -->
     <table id="dataTable" border="1">
-        <!-- La tabla se llenará dinámicamente con JavaScript -->
+        <!-- Data table fills with javascript -->
     </table>
 
-    <!-- Botón para redirigir -->
+    <!-- Button to redirect -->
     <button onclick="window.location.href='/queries'">Queries</button>
 </body>
 </html>

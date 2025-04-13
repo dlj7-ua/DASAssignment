@@ -81,6 +81,8 @@ rs.initiate(
 ```
 
 ### Mongo routers
+Go to the mongos directory, open the docker-compose.yaml file and update the config server IPs in the environment section. The config server IPs should be the same as the ones you used while creating the config servers.
+
 Finally start the mongo routers:
 ```
 docker-compose -f mongos/docker-compose.yaml up -d
@@ -114,5 +116,9 @@ Shard your collection, this command will automatically enable sharding if your u
 
 ``sh.shardCollection("<database>.<collection>", { <shard key field> : "hashed" , ... } )``
 
-You can check the sharding status of a database using ``sh.status()``, and data distribution across shards for a collection using: 
-```db.<collection>.getShardDistribution()```
+You can check the sharding status of a database using ``sh.status()``
+
+Yo can use the below command to stop all the containers:
+```
+find . -name "docker-compose.yaml" -execdir docker-compose down \;
+```

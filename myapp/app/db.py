@@ -28,13 +28,12 @@ def create_collections(db, app):
             with open(route, "r", encoding='utf-8') as file:
                 config = json.loads(file.read())
                 
-                # Extrae el validador del objeto contenedor
+                # Loads the JSON schema
                 validator = config.get("validator", {})
                 
-                # Versión para MongoDB 3.6+
                 db.create_collection(
                     collection,
-                    validator=validator,  # Usa solo el contenido de "validator"
+                    validator=validator,
                     validationLevel="strict",
                     validationAction="error"
                 )

@@ -1,11 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Queries</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execute Queries</title>
 </head>
 <body>
-    <h1>Queries</h1>
-    <p>Contenido de la otra página...</p>
-    <button onclick="window.location.href='/'">Volver</button>
+    <h1>Execute Queries</h1>
+
+    <form method="POST">
+        <label for="mode">Mode (e.g., bus, tube):</label>
+        <input type="text" name="mode" id="mode">
+        <br>
+
+        <label for="line_name">Line Name:</label>
+        <input type="text" name="line_name" id="line_name">
+        <br>
+
+        <label for="station_id">Station ID (ObjectId):</label>
+        <input type="text" name="station_id" id="station_id">
+        <br>
+
+        <label for="vehicle_id">Vehicle ID (ObjectId):</label>
+        <input type="text" name="vehicle_id" id="vehicle_id">
+        <br>
+
+        <label for="location">Location:</label>
+        <input type="text" name="location" id="location">
+        <br>
+
+        <label for="time">Time (Seconds for Long Wait):</label>
+        <input type="number" name="time" id="time">
+        <br>
+
+        <button type="submit">Execute</button>
+    </form>
+
+    <h2>Results:</h2>
+    <div>
+        <h3>Lines by Mode:</h3>
+        <ul>
+            {% if results.lines_by_mode %}
+                {% for line in results.lines_by_mode %}
+                    <li>{{ line.name }} - {{ line.status }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Line by Name:</h3>
+        {% if results.line_by_name %}
+            <p>{{ results.line_by_name.name }} - {{ results.line_by_name.status }}</p>
+        {% else %}
+            <p>No results found.</p>
+        {% endif %}
+    </div>
+
+    <div>
+        <h3>Arrivals by Station:</h3>
+        <ul>
+            {% if results.arrivals_by_station %}
+                {% for arrival in results.arrivals_by_station %}
+                    <li>Expected Arrival: {{ arrival.expectedArrival }} - Station: {{ arrival.stationId }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Arrivals by Vehicle:</h3>
+        <ul>
+            {% if results.arrivals_by_vehicle %}
+                {% for arrival in results.arrivals_by_vehicle %}
+                    <li>Vehicle: {{ arrival.vehicleId }} - Expected Arrival: {{ arrival.expectedArrival }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Vehicles by Location:</h3>
+        <ul>
+            {% if results.vehicles_by_location %}
+                {% for vehicle in results.vehicles_by_location %}
+                    <li>Vehicle: {{ vehicle.vehicleId }} - Location: {{ vehicle.currentLocation }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Arrivals with Long Wait:</h3>
+        <ul>
+            {% if results.arrivals_with_long_wait %}
+                {% for arrival in results.arrivals_with_long_wait %}
+                    <li>Vehicle: {{ arrival.vehicleId }} - Time to Station: {{ arrival.timeToStation }} seconds</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Count Arrivals by Line:</h3>
+        <ul>
+            {% if results.count_arrivals_by_line %}
+                {% for count in results.count_arrivals_by_line %}
+                    <li>Line: {{ count._id }} - Count: {{ count.count }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Count Arrivals by Station:</h3>
+        <ul>
+            {% if results.count_arrivals_by_station %}
+                {% for count in results.count_arrivals_by_station %}
+                    <li>Station: {{ count._id }} - Count: {{ count.count }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Stations with Most Lines:</h3>
+        <ul>
+            {% if results.stations_with_most_lines %}
+                {% for station in results.stations_with_most_lines %}
+                    <li>Station: {{ station.name }} - Lines: {{ station.lineCount }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Count Vehicles by Line:</h3>
+        <ul>
+            {% if results.count_vehicles_by_line %}
+                {% for count in results.count_vehicles_by_line %}
+                    <li>Line: {{ count._id }} - Count: {{ count.count }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div>
+        <h3>Lines with Most Disruptions:</h3>
+        <ul>
+            {% if results.lines_with_most_disruptions %}
+                {% for line in results.lines_with_most_disruptions %}
+                    <li>Line: {{ line.name }} - Disruptions: {{ line.disruptionCount }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No results found.</li>
+            {% endif %}
+        </ul>
+    </div>
 </body>
 </html>
+
