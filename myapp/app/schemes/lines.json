@@ -1,0 +1,23 @@
+{
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["lineId", "name", "mode", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "lineId": { "bsonType": "objectId" },
+        "name": { "bsonType": "string" },
+        "mode": {
+          "bsonType": "string",
+          "enum": ["tube", "bus", "tram", "dlr", "overground", "river-bus"]
+        },
+        "status": { "bsonType": "string" },
+        "disruptions": {
+          "bsonType": "array",
+          "items": { "bsonType": "string" }
+        },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

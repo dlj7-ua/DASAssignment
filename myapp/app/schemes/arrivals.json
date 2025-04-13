@@ -1,0 +1,22 @@
+{
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["vehicleId", "lineId", "stationId", "destination", "expectedArrival", "timeToStation", "direction", "createdAt"],
+      "properties": {
+        "vehicleId": { "bsonType": "objectId" },
+        "lineId": { "bsonType": "objectId" },
+        "stationId": { "bsonType": "objectId" },
+        "destination": { "bsonType": "string" },
+        "expectedArrival": { "bsonType": "date" },
+        "timeToStation": { "bsonType": "int" },
+        "currentLocation": { "bsonType": "string" },
+        "direction": {
+          "bsonType": "string",
+          "enum": ["inbound", "outbound"]
+        },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

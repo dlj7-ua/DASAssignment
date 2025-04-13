@@ -1,0 +1,22 @@
+{
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["naptanId", "name", "mode", "lines", "createdAt", "updatedAt"],
+      "properties": {
+        "naptanId": { "bsonType": "objectId" },
+        "name": { "bsonType": "string" },
+        "mode": {
+          "bsonType": "string",
+          "enum": ["tube", "bus", "tram", "dlr", "overground", "river-bus"]
+        },
+        "lines": {
+          "bsonType": "array",
+          "items": { "bsonType": "objectId" }
+        },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

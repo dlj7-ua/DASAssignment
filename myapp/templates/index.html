@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MongoDB Data Viewer</title>
+    <script>
+        // Esquemas conocidos para cada colección (incluyendo todas las columnas posibles)
+        const collectionSchemas = {
+            'lines': ['_id', 'lineId', 'name', 'mode', 'status', 'disruptions', 'createdAt', 'updatedAt'],
+            'arrivals': ['_id', 'vehicleId', 'lineId', 'stationId', 'destination', 'expectedArrival', 
+                        'timeToStation', 'currentLocation', 'direction', 'createdAt'],
+            'stations': ['_id', 'naptanId', 'name', 'mode', 'lines', 'createdAt', 'updatedAt'],
+            'vehicles': ['_id', 'vehicleId', 'lineId', 'currentLocation', 'status', 'createdAt', 'updatedAt']
+        };
+
+        async function loadCollection() {
+            const collection = document.getElementById('collectionSelect').value;
+            if (!collection) return;
+
+            try {
+                const response = await fetch(`/${collection}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const data = await response.json();
+                renderTable(collection, data);
+            } catch (error) {
+                console.error('Error:', error);
+                renderTable(collection, []);
+            }
+        }
+
+        function renderTable(collection, items) {
+            const table = document.getElementById('dataTable');
+            table.innerHTML = '';
+
+            // Obtener las columnas del esquema conocido
+            const headers = collectionSchemas[collection] || 
+                          (items.length > 0 ? Object.keys(items[0]) : []);
+
+            // Crear encabezados
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Crear cuerpo de la tabla
+            const tbody = document.createElement('tbody');
+            
+            if (items.length > 0) {
+                items.forEach(item => {
+                    const row = document.createElement('tr');
+                    headers.forEach(header => {
+                        const td = document.createElement('td');
+                        // Manejar valores anidados o arrays
+                        const value = item[header];
+                        if (Array.isArray(value)) {
+                            td.textContent = value.join(', ');
+                        } else if (value && typeof value === 'object') {
+                            td.textContent = JSON.stringify(value);
+                        } else {
+                            td.textContent = value || '';
+                        }
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = 'No hay documentos en esta colección';
+                td.colSpan = headers.length;
+                row.appendChild(td);
+                tbody.appendChild(row);
+            }
+            
+            table.appendChild(tbody);
+        }
+    </script>
+</head>
+<body>
+    <h1>Data display</h1>
+    
+    <!-- Selector de colección -->
+    <select id="collectionSelect" onchange="loadCollection()">
+        <option value="">Choose one collection</option>
+        <option value="lines">Lines</option>
+        <option value="arrivals">Arrivals</option>
+        <option value="stations">Stations</option>
+        <option value="vehicles">Vehicles</option>
+    </select>
+
+    <!-- Tabla de datos -->
+    <table id="dataTable" border="1">
+        <!-- La tabla se llenará dinámicamente con JavaScript -->
+    </table>
+
+    <!-- Botón para redirigir -->
+    <button onclick="window.location.href='/queries'">Queries</button>
+</body>
+</html>

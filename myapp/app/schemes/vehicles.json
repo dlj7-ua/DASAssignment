@@ -1,0 +1,19 @@
+{
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["vehicleId", "lineId", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "vehicleId": { "bsonType": "objectId" },
+        "lineId": { "bsonType": "objectId" },
+        "currentLocation": { "bsonType": "string" },
+        "status": {
+          "bsonType": "string",
+          "enum": ["In Service", "Out of Service", "Delayed"]
+        },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" }
+      }
+    }
+  }
+}
